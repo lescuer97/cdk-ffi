@@ -366,12 +366,25 @@ pub struct FFILocalStore {
 impl FFILocalStore {
     #[uniffi::constructor]
     pub fn new() -> Result<Arc<Self>> {
+        Self::new_with_path(None)
+    }
+
+    #[uniffi::constructor]
+    pub fn new_with_path(db_path: Option<String>) -> Result<Arc<Self>> {
         let rt = runtime();
         let store = rt.block_on(async { 
-            // Create a temporary file-based database to ensure proper schema initialization
-            let db_path = std::env::temp_dir().join(format!("cdk_wallet_{}.db", uuid::Uuid::new_v4()));
-            let db_path_str = db_path.to_string_lossy().to_string();
-            cdk_sqlite::WalletSqliteDatabase::new(&db_path_str).await
+            let final_db_path = match db_path {
+                Some(custom_path) => {
+                    // Use the provided path directly
+                    custom_path
+                },
+                None => {
+                    // Fallback to temp directory (original behavior)
+                    let temp_path = std::env::temp_dir().join(format!("cdk_wallet_{}.db", uuid::Uuid::new_v4()));
+                    temp_path.to_string_lossy().to_string()
+                }
+            };
+            cdk_sqlite::WalletSqliteDatabase::new(&final_db_path).await
         })?;
         Ok(Arc::new(Self { inner: Arc::new(store) }))
     }
