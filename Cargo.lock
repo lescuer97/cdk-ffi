@@ -648,6 +648,7 @@ name = "cdk-ffi"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bip39",
  "cashu",
  "cdk",
  "cdk-common",

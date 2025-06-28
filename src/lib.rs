@@ -11,9 +11,20 @@ use cdk_common::common::Melted;
 use cdk::nuts::nut00::ProofsMethods;
 
 use tokio::runtime::Runtime;
+use bip39::Mnemonic;
 
 // Export the uniffi bindings
 uniffi::setup_scaffolding!();
+
+/// Generate a 12-word mnemonic phrase
+#[uniffi::export]
+pub fn generate_mnemonic() -> Result<String> {
+    let mnemonic = Mnemonic::generate(12)
+        .map_err(|e| FFIError::InternalError {
+            msg: format!("Failed to generate mnemonic: {}", e),
+        })?;
+    Ok(mnemonic.to_string())
+}
 
 // Error handling
 #[derive(Debug, thiserror::Error, uniffi::Error)]
