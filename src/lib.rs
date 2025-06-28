@@ -26,15 +26,14 @@ pub fn generate_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-/// Convert a mnemonic phrase to a 32-byte seed for wallet creation
-fn mnemonic_to_seed(mnemonic_words: String) -> Result<Vec<u8>> {
+/// Convert a mnemonic phrase to a 64-byte seed for wallet creation
+fn mnemonic_to_seed(mnemonic_words: String) -> Result<[u8; 64]> {
     let mnemonic = Mnemonic::parse(&mnemonic_words)
         .map_err(|e| FFIError::InvalidInput {
             msg: format!("Invalid mnemonic: {}", e),
         })?;
     
-    let seed = mnemonic.to_seed_normalized("");
-    Ok(seed[..32].to_vec()) // Return first 32 bytes as Vec<u8>
+    Ok(mnemonic.to_seed_normalized(""))
 }
 
 // Error handling
@@ -428,21 +427,12 @@ impl FFIWallet {
         mnemonic_words: String,
     ) -> Result<Arc<Self>> {
         let seed = mnemonic_to_seed(mnemonic_words.clone())?;
-        
-        if seed.len() != 32 {
-            return Err(FFIError::InvalidInput {
-                msg: "Seed must be 32 bytes".to_string(),
-            });
-        }
-
-        let mut seed_bytes = [0u8; 32];
-        seed_bytes.copy_from_slice(&seed);
 
         let wallet = CdkWallet::new(
             &mint_url,
             unit.into(),
             localstore.inner.clone(),
-            &seed_bytes,
+            &seed,
             None,
         )?;
 
@@ -460,21 +450,12 @@ impl FFIWallet {
         mnemonic_words: String,
     ) -> Result<Arc<Self>> {
         let seed = mnemonic_to_seed(mnemonic_words.clone())?;
-        
-        if seed.len() != 32 {
-            return Err(FFIError::InvalidInput {
-                msg: "Seed must be 32 bytes".to_string(),
-            });
-        }
-
-        let mut seed_bytes = [0u8; 32];
-        seed_bytes.copy_from_slice(&seed);
 
         let wallet = CdkWallet::new(
             &mint_url,
             unit.into(),
             localstore.inner.clone(),
-            &seed_bytes,
+            &seed,
             None,
         )?;
 
