@@ -452,6 +452,45 @@ impl FFIWallet {
         }))
     }
 
+    #[uniffi::constructor]
+    pub fn restore_from_mnemonic(
+        mint_url: String,
+        unit: FFICurrencyUnit,
+        localstore: Arc<FFILocalStore>,
+        mnemonic_words: String,
+    ) -> Result<Arc<Self>> {
+        let seed = mnemonic_to_seed(mnemonic_words.clone())?;
+        
+        if seed.len() != 32 {
+            return Err(FFIError::InvalidInput {
+                msg: "Seed must be 32 bytes".to_string(),
+            });
+        }
+
+        let mut seed_bytes = [0u8; 32];
+        seed_bytes.copy_from_slice(&seed);
+
+        let wallet = CdkWallet::new(
+            &mint_url,
+            unit.into(),
+            localstore.inner.clone(),
+            &seed_bytes,
+            None,
+        )?;
+
+        let runtime = runtime();
+        
+        // Call restore on the wallet
+        runtime.block_on(async {
+            wallet.restore().await
+        })?;
+
+        Ok(Arc::new(Self {
+            inner: wallet,
+            runtime,
+        }))
+    }
+
     pub fn mint_quote(&self, amount: FFIAmount, description: Option<String>) -> Result<FFIMintQuote> {
         self.runtime.block_on(async {
             let quote = self.inner.mint_quote(amount.into(), description).await?;
