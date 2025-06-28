@@ -26,6 +26,17 @@ pub fn generate_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
+/// Convert a mnemonic phrase to a 32-byte seed for wallet creation
+fn mnemonic_to_seed(mnemonic_words: String) -> Result<Vec<u8>> {
+    let mnemonic = Mnemonic::parse(&mnemonic_words)
+        .map_err(|e| FFIError::InvalidInput {
+            msg: format!("Invalid mnemonic: {}", e),
+        })?;
+    
+    let seed = mnemonic.to_seed_normalized("");
+    Ok(seed[..32].to_vec()) // Return first 32 bytes as Vec<u8>
+}
+
 // Error handling
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum FFIError {
@@ -410,12 +421,14 @@ pub struct FFIWallet {
 #[uniffi::export]
 impl FFIWallet {
     #[uniffi::constructor]
-    pub fn new(
+    pub fn from_mnemonic(
         mint_url: String,
         unit: FFICurrencyUnit,
         localstore: Arc<FFILocalStore>,
-        seed: Vec<u8>,
+        mnemonic_words: String,
     ) -> Result<Arc<Self>> {
+        let seed = mnemonic_to_seed(mnemonic_words.clone())?;
+        
         if seed.len() != 32 {
             return Err(FFIError::InvalidInput {
                 msg: "Seed must be 32 bytes".to_string(),
