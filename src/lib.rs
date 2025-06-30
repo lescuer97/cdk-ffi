@@ -234,6 +234,7 @@ pub struct FFISendOptions {
     pub send_kind: FFISendKind,
     pub include_fee: bool,
     pub metadata: HashMap<String, String>,
+    pub max_proofs: Option<u64>,
 }
 
 impl From<FFISendOptions> for SendOptions {
@@ -245,6 +246,7 @@ impl From<FFISendOptions> for SendOptions {
             send_kind: options.send_kind.into(),
             include_fee: options.include_fee,
             metadata: options.metadata,
+            max_proofs: options.max_proofs.map(|p| p as usize),
         }
     }
 }
