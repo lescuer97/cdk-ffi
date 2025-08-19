@@ -28,9 +28,9 @@ func NewStorageFromPath(path string) (Storage, error) {
 	return Storage{storage: storage}, nil
 }
 
-type Unit cdk_ffi.FfiCurrencyUnit
+type Unit = cdk_ffi.FfiCurrencyUnit
 
-const Sat Unit = cdk_ffi.FfiCurrencyUnitSat
+const Sat Unit = Unit(cdk_ffi.FfiCurrencyUnitSat)
 
 func RestoreFroMMnemonic(minturl string, unit Unit, storage Storage, mnemonic string) (*Wallet, error) {
 	wallet, err := cdk_ffi.FfiWalletRestoreFromMnemonic(minturl, cdk_ffi.FfiCurrencyUnit(unit), storage.storage, mnemonic)

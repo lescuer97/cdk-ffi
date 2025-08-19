@@ -20,3 +20,11 @@ This crate exposes the Rust wallet API to multiple languages (Swift, Kotlin/Java
 | Query balance and metadata | `balance`, `mint_url`, `unit`, `get_mint_info` |
 
 All amounts are handled with the CDK `Amount` new-type and exposed as the simple record `FFIAmount` for foreign languages.
+
+
+## Running for go
+```bash
+cd go_dir
+CGO_ENABLED="1" CGO_LDFLAGS="-L../target/release -lcdk_ffi" LD_LIBRARY_PATH="../target/release" go run ./...
+
+```
