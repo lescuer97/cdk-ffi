@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use cdk::amount::SplitTarget;
+use cdk::nuts::nut00::ProofsMethods;
 use cdk::nuts::{CurrencyUnit, MintQuoteState};
 use cdk::wallet::{PreparedSend, SendMemo, SendOptions, Wallet as CdkWallet};
 use cdk::Amount;
+use cdk_common::common::Melted;
 use cdk_common::database::WalletDatabase;
 use cdk_common::wallet::{MeltQuote, MintQuote, SendKind};
-use cdk_common::common::Melted;
-use cdk::nuts::nut00::ProofsMethods;
 
-use tokio::runtime::Runtime;
 use bip39::Mnemonic;
+use tokio::runtime::Runtime;
 
 // Export the uniffi bindings
 uniffi::setup_scaffolding!();
@@ -19,20 +19,18 @@ uniffi::setup_scaffolding!();
 /// Generate a 12-word mnemonic phrase
 #[uniffi::export]
 pub fn generate_mnemonic() -> Result<String> {
-    let mnemonic = Mnemonic::generate(12)
-        .map_err(|e| FFIError::InternalError {
-            msg: format!("Failed to generate mnemonic: {}", e),
-        })?;
+    let mnemonic = Mnemonic::generate(12).map_err(|e| FFIError::InternalError {
+        msg: format!("Failed to generate mnemonic: {}", e),
+    })?;
     Ok(mnemonic.to_string())
 }
 
 /// Convert a mnemonic phrase to a 64-byte seed for wallet creation
 fn mnemonic_to_seed(mnemonic_words: String) -> Result<[u8; 64]> {
-    let mnemonic = Mnemonic::parse(&mnemonic_words)
-        .map_err(|e| FFIError::InvalidInput {
-            msg: format!("Invalid mnemonic: {}", e),
-        })?;
-    
+    let mnemonic = Mnemonic::parse(&mnemonic_words).map_err(|e| FFIError::InvalidInput {
+        msg: format!("Invalid mnemonic: {}", e),
+    })?;
+
     Ok(mnemonic.to_seed_normalized(""))
 }
 
@@ -41,13 +39,13 @@ fn mnemonic_to_seed(mnemonic_words: String) -> Result<[u8; 64]> {
 pub enum FFIError {
     #[error("Wallet error: {msg}")]
     WalletError { msg: String },
-    
+
     #[error("Invalid input: {msg}")]
     InvalidInput { msg: String },
-    
+
     #[error("Network error: {msg}")]
     NetworkError { msg: String },
-    
+
     #[error("Internal error: {msg}")]
     InternalError { msg: String },
 }
@@ -210,14 +208,15 @@ pub struct FFIToken {
 
 impl TryFrom<cdk::nuts::Token> for FFIToken {
     type Error = FFIError;
-    
+
     fn try_from(token: cdk::nuts::Token) -> Result<Self> {
-        let mint_url = token.mint_url()
+        let mint_url = token
+            .mint_url()
             .map_err(|e| FFIError::WalletError { msg: e.to_string() })?
             .to_string();
-        
+
         let token_str = token.to_string();
-        
+
         Ok(Self {
             token_string: token_str,
             mint: mint_url,
@@ -395,21 +394,24 @@ impl FFILocalStore {
     #[uniffi::constructor]
     pub fn new_with_path(db_path: Option<String>) -> Result<Arc<Self>> {
         let rt = runtime();
-        let store = rt.block_on(async { 
+        let store = rt.block_on(async {
             let final_db_path = match db_path {
                 Some(custom_path) => {
                     // Use the provided path directly
                     custom_path
-                },
+                }
                 None => {
                     // Fallback to temp directory (original behavior)
-                    let temp_path = std::env::temp_dir().join(format!("cdk_wallet_{}.db", uuid::Uuid::new_v4()));
+                    let temp_path = std::env::temp_dir()
+                        .join(format!("cdk_wallet_{}.db", uuid::Uuid::new_v4()));
                     temp_path.to_string_lossy().to_string()
                 }
             };
             cdk_sqlite::WalletSqliteDatabase::new(&final_db_path).await
         })?;
-        Ok(Arc::new(Self { inner: Arc::new(store) }))
+        Ok(Arc::new(Self {
+            inner: Arc::new(store),
+        }))
     }
 }
 
@@ -462,11 +464,9 @@ impl FFIWallet {
         )?;
 
         let runtime = runtime();
-        
+
         // Call restore on the wallet
-        runtime.block_on(async {
-            wallet.restore().await
-        })?;
+        runtime.block_on(async { wallet.restore().await })?;
 
         Ok(Arc::new(Self {
             inner: wallet,
@@ -474,7 +474,11 @@ impl FFIWallet {
         }))
     }
 
-    pub fn mint_quote(&self, amount: FFIAmount, description: Option<String>) -> Result<FFIMintQuote> {
+    pub fn mint_quote(
+        &self,
+        amount: FFIAmount,
+        description: Option<String>,
+    ) -> Result<FFIMintQuote> {
         self.runtime.block_on(async {
             let quote = self.inner.mint_quote(amount.into(), description).await?;
             Ok(quote.into())
@@ -488,11 +492,7 @@ impl FFIWallet {
         })
     }
 
-    pub fn mint(
-        &self,
-        quote_id: String,
-        split_target: FFISplitTarget,
-    ) -> Result<FFIAmount> {
+    pub fn mint(&self, quote_id: String, split_target: FFISplitTarget) -> Result<FFIAmount> {
         self.runtime.block_on(async {
             let proofs = self
                 .inner
@@ -529,7 +529,7 @@ impl FFIWallet {
                 .inner
                 .prepare_send(amount.into(), options.into())
                 .await?;
-            
+
             // Then send it
             let token = self.inner.send(prepared, memo.map(|m| m.into())).await?;
             Ok(token.try_into()?)
@@ -603,4 +603,4 @@ impl FFIWallet {
             Ok(result.into())
         })
     }
-} 
+}
