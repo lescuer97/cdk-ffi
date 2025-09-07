@@ -80,14 +80,96 @@ func (w *Wallet) GetMintInfo() (string, error) {
 	return w.wallet.GetMintInfo()
 }
 
-// Melt executes a melt operation (pay Lightning invoice)
-func (w *Wallet) Melt(quoteId string) (cdk_ffi.FfiMelted, error) {
-	return w.wallet.Melt(quoteId)
+// MintUrl returns the mint URL
+func (w *Wallet) MintUrl() string {
+	return w.wallet.MintUrl()
+}
+
+// PreparedSend is a Go-native representation of cdk_ffi.FfiPreparedSend
+type PreparedSend struct {
+	Amount   Amount
+	SwapFee  Amount
+	SendFee  Amount
+	TotalFee Amount
+}
+
+// PrepareSend prepares a send operation using Go-native SendOptions
+func (w *Wallet) PrepareSend(amount Amount, options SendOptions) (PreparedSend, error) {
+	ffiOptions := options.ToFFI()
+	ffiPrepared, err := w.wallet.PrepareSend(cdk_ffi.FfiAmount{Value: amount.Value}, ffiOptions)
+	if err != nil {
+		return PreparedSend{}, err
+	}
+	return PreparedSend{
+		Amount:   Amount{Value: ffiPrepared.Amount.Value},
+		SwapFee:  Amount{Value: ffiPrepared.SwapFee.Value},
+		SendFee:  Amount{Value: ffiPrepared.SendFee.Value},
+		TotalFee: Amount{Value: ffiPrepared.TotalFee.Value},
+	}, nil
+}
+
+// Send sends tokens using Go-native SendOptions and SendMemo
+func (w *Wallet) Send(amount Amount, options SendOptions, memo *SendMemo) (Token, error) {
+	ffiOptions := options.ToFFI()
+	var ffiMemo *cdk_ffi.FfiSendMemo
+	if memo != nil {
+		ffiMemo = memo.ToFFI()
+	}
+	ffiToken, err := w.wallet.Send(cdk_ffi.FfiAmount{Value: amount.Value}, ffiOptions, ffiMemo)
+	if err != nil {
+		return Token{}, err
+	}
+	return TokenFromFFI(ffiToken), nil
+}
+
+// MeltQuote is a Go-native representation of cdk_ffi.FfiMeltQuote
+type MeltQuote struct {
+	Id              string
+	Unit            string
+	Amount          Amount
+	Request         string
+	FeeReserve      Amount
+	Expiry          uint64
+	PaymentPreimage *string
 }
 
 // MeltQuote creates a melt quote for paying a Lightning invoice
-func (w *Wallet) MeltQuote(request string) (cdk_ffi.FfiMeltQuote, error) {
-	return w.wallet.MeltQuote(request)
+func (w *Wallet) MeltQuote(request string) (MeltQuote, error) {
+	f, err := w.wallet.MeltQuote(request)
+	if err != nil {
+		return MeltQuote{}, err
+	}
+	return MeltQuote{
+		Id:              f.Id,
+		Unit:            f.Unit,
+		Amount:          Amount{Value: f.Amount.Value},
+		Request:         f.Request,
+		FeeReserve:      Amount{Value: f.FeeReserve.Value},
+		Expiry:          f.Expiry,
+		PaymentPreimage: f.PaymentPreimage,
+	}, nil
+}
+
+// Melted is a Go-native representation of cdk_ffi.FfiMelted
+type Melted struct {
+	State    string
+	Preimage *string
+	Amount   Amount
+	FeePaid  Amount
+}
+
+// Melt executes a melt operation (pay Lightning invoice)
+func (w *Wallet) Melt(quoteId string) (Melted, error) {
+	m, err := w.wallet.Melt(quoteId)
+	if err != nil {
+		return Melted{}, err
+	}
+	return Melted{
+		State:    m.State,
+		Preimage: m.Preimage,
+		Amount:   Amount{Value: m.Amount.Value},
+		FeePaid:  Amount{Value: m.FeePaid.Value},
+	}, nil
 }
 
 // Mint mints tokens from a quote
@@ -107,21 +189,6 @@ func (w *Wallet) MintQuote(amount Amount, description *string) (cdk_ffi.FfiMintQ
 // MintQuoteState gets the state of a mint quote
 func (w *Wallet) MintQuoteState(quoteId string) (cdk_ffi.FfiMintQuoteBolt11Response, error) {
 	return w.wallet.MintQuoteState(quoteId)
-}
-
-// MintUrl returns the mint URL
-func (w *Wallet) MintUrl() string {
-	return w.wallet.MintUrl()
-}
-
-// PrepareSend prepares a send operation
-func (w *Wallet) PrepareSend(amount Amount, options cdk_ffi.FfiSendOptions) (cdk_ffi.FfiPreparedSend, error) {
-	return w.wallet.PrepareSend(cdk_ffi.FfiAmount{Value: amount.Value}, options)
-}
-
-// Send sends tokens
-func (w *Wallet) Send(amount Amount, options cdk_ffi.FfiSendOptions, memo *cdk_ffi.FfiSendMemo) (cdk_ffi.FfiToken, error) {
-	return w.wallet.Send(cdk_ffi.FfiAmount{Value: amount.Value}, options, memo)
 }
 
 // Unit returns the wallet's currency unit
