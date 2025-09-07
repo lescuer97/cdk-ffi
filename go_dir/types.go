@@ -17,6 +17,67 @@ func (s MintQuoteState) ToFFI() cdk_ffi.FfiMintQuoteState {
 	return cdk_ffi.FfiMintQuoteState(s)
 }
 
+// MintQuote is a Go-native representation of cdk_ffi.FfiMintQuote
+type MintQuote struct {
+	Id      string
+	MintUrl string
+	Amount  Amount
+	Unit    string
+	Request string
+	State   MintQuoteState
+	Expiry  uint64
+}
+
+func MintQuoteFromFFI(f cdk_ffi.FfiMintQuote) MintQuote {
+	return MintQuote{
+		Id:      f.Id,
+		MintUrl: f.MintUrl,
+		Amount:  Amount{Value: f.Amount.Value},
+		Unit:    f.Unit,
+		Request: f.Request,
+		State:   MintQuoteStateFromFFI(f.State),
+		Expiry:  f.Expiry,
+	}
+}
+
+func (m MintQuote) ToFFI() cdk_ffi.FfiMintQuote {
+	return cdk_ffi.FfiMintQuote{
+		Id:      m.Id,
+		MintUrl: m.MintUrl,
+		Amount:  cdk_ffi.FfiAmount{Value: m.Amount.Value},
+		Unit:    m.Unit,
+		Request: m.Request,
+		State:   m.State.ToFFI(),
+		Expiry:  m.Expiry,
+	}
+}
+
+// MintQuoteBolt11 is a Go-native representation of cdk_ffi.FfiMintQuoteBolt11Response
+type MintQuoteBolt11 struct {
+	Quote   string
+	Request string
+	State   MintQuoteState
+	Expiry  *uint64
+}
+
+func MintQuoteBolt11FromFFI(f cdk_ffi.FfiMintQuoteBolt11Response) MintQuoteBolt11 {
+	return MintQuoteBolt11{
+		Quote:   f.Quote,
+		Request: f.Request,
+		State:   MintQuoteStateFromFFI(f.State),
+		Expiry:  f.Expiry,
+	}
+}
+
+func (m MintQuoteBolt11) ToFFI() cdk_ffi.FfiMintQuoteBolt11Response {
+	return cdk_ffi.FfiMintQuoteBolt11Response{
+		Quote:   m.Quote,
+		Request: m.Request,
+		State:   m.State.ToFFI(),
+		Expiry:  m.Expiry,
+	}
+}
+
 func MintQuoteStateFromFFI(v cdk_ffi.FfiMintQuoteState) MintQuoteState {
 	return MintQuoteState(v)
 }
