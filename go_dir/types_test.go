@@ -17,7 +17,7 @@ func TestSendMemoConversion(t *testing.T) {
 func TestTokenConversion(t *testing.T) {
 	f := cdk_ffi.FfiToken{TokenString: "tok", Mint: "mint1", Memo: nil, Unit: "sat"}
 	got := TokenFromFFI(f)
-	if got.TokenString != "tok" || got.Mint != "mint1" || got.Unit != "sat" {
+	if got.tokenString != "tok" || got.tokenString != "mint1" || got.Unit != "sat" {
 		t.Fatalf("unexpected token conversion: %#v", got)
 	}
 }

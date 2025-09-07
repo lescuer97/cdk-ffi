@@ -109,13 +109,9 @@ func (w *Wallet) PrepareSend(amount Amount, options SendOptions) (PreparedSend, 
 }
 
 // Send sends tokens using Go-native SendOptions and SendMemo
-func (w *Wallet) Send(amount Amount, options SendOptions, memo *SendMemo) (Token, error) {
+func (w *Wallet) Send(amount Amount, options SendOptions) (Token, error) {
 	ffiOptions := options.ToFFI()
-	var ffiMemo *cdk_ffi.FfiSendMemo
-	if memo != nil {
-		ffiMemo = memo.ToFFI()
-	}
-	ffiToken, err := w.wallet.Send(cdk_ffi.FfiAmount{Value: amount.Value}, ffiOptions, ffiMemo)
+	ffiToken, err := w.wallet.Send(cdk_ffi.FfiAmount(amount), ffiOptions, options.Memo.ToFFI())
 	if err != nil {
 		return Token{}, err
 	}
@@ -150,6 +146,24 @@ func (w *Wallet) MeltQuote(request string) (MeltQuote, error) {
 	}, nil
 }
 
+// MintQuote creates a mint quote for a specific amount and returns a Go-native MintQuote
+func (w *Wallet) MintQuote(amount Amount, description *string) (MintQuote, error) {
+	f, err := w.wallet.MintQuote(cdk_ffi.FfiAmount{Value: amount.Value}, description)
+	if err != nil {
+		return MintQuote{}, err
+	}
+	return MintQuoteFromFFI(f), nil
+}
+
+// MintQuoteState gets the state of a mint quote and returns a Go-native MintQuoteBolt11
+func (w *Wallet) MintQuoteState(quoteId string) (MintQuoteBolt11, error) {
+	f, err := w.wallet.MintQuoteState(quoteId)
+	if err != nil {
+		return MintQuoteBolt11{}, err
+	}
+	return MintQuoteBolt11FromFFI(f), nil
+}
+
 // Melted is a Go-native representation of cdk_ffi.FfiMelted
 type Melted struct {
 	State    string
@@ -179,16 +193,6 @@ func (w *Wallet) Mint(quoteId string, splitTarget SplitTarget) (Amount, error) {
 		return Amount{}, err
 	}
 	return Amount{Value: amount.Value}, nil
-}
-
-// MintQuote creates a mint quote for a specific amount
-func (w *Wallet) MintQuote(amount Amount, description *string) (cdk_ffi.FfiMintQuote, error) {
-	return w.wallet.MintQuote(cdk_ffi.FfiAmount{Value: amount.Value}, description)
-}
-
-// MintQuoteState gets the state of a mint quote
-func (w *Wallet) MintQuoteState(quoteId string) (cdk_ffi.FfiMintQuoteBolt11Response, error) {
-	return w.wallet.MintQuoteState(quoteId)
 }
 
 // Unit returns the wallet's currency unit

@@ -22,9 +22,16 @@ This crate exposes the Rust wallet API to multiple languages (Swift, Kotlin/Java
 All amounts are handled with the CDK `Amount` new-type and exposed as the simple record `FFIAmount` for foreign languages.
 
 
+## how to run the build command for go: 
+
+```bash
+LD_LIBRARY_PATH="./target/release"  uniffi-bindgen-go  --out-dir ./go_dir --library target/release/libcdk_ffi.so
+
+```
 ## Running for go
 ```bash
 cd go_dir
 CGO_ENABLED="1" CGO_LDFLAGS="-L../target/release -lcdk_ffi" LD_LIBRARY_PATH="../target/release" go run ./...
 
 ```
+

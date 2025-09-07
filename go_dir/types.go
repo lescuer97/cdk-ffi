@@ -110,7 +110,7 @@ func SendMemoFromFFI(f *cdk_ffi.FfiSendMemo) *SendMemo {
 
 // Token is a Go-native representation of cdk_ffi.FfiToken
 type Token struct {
-	TokenString string
+	tokenString string
 	Mint        string
 	Memo        *string
 	Unit        string
@@ -118,7 +118,7 @@ type Token struct {
 
 func TokenFromFFI(f cdk_ffi.FfiToken) Token {
 	return Token{
-		TokenString: f.TokenString,
+		tokenString: f.TokenString,
 		Mint:        f.Mint,
 		Memo:        f.Memo,
 		Unit:        f.Unit,
@@ -127,11 +127,14 @@ func TokenFromFFI(f cdk_ffi.FfiToken) Token {
 
 func (t Token) ToFFI() cdk_ffi.FfiToken {
 	return cdk_ffi.FfiToken{
-		TokenString: t.TokenString,
+		TokenString: t.tokenString,
 		Mint:        t.Mint,
 		Memo:        t.Memo,
 		Unit:        t.Unit,
 	}
+}
+func (t Token) String() string {
+	return t.tokenString
 }
 
 // SendKind wrapper types
@@ -179,7 +182,7 @@ func SendKindFromFFI(f cdk_ffi.FfiSendKind) SendKind {
 // SendOptions is a Go-native representation
 type SendOptions struct {
 	Memo              *SendMemo
-	AmountSplitTarget uint
+	AmountSplitTarget SplitTarget
 	Kind              SendKind
 	IncludeFee        bool
 	Metadata          map[string]string
@@ -206,7 +209,7 @@ func (o SendOptions) ToFFI() cdk_ffi.FfiSendOptions {
 func SendOptionsFromFFI(f cdk_ffi.FfiSendOptions) SendOptions {
 	return SendOptions{
 		Memo:              SendMemoFromFFI(f.Memo),
-		AmountSplitTarget: uint(f.AmountSplitTarget),
+		AmountSplitTarget: SplitTarget(f.AmountSplitTarget),
 		Kind:              SendKindFromFFI(f.SendKind),
 		IncludeFee:        f.IncludeFee,
 		Metadata:          f.Metadata,
